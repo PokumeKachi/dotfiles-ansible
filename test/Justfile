@@ -1,6 +1,7 @@
 SSHOPTS := "-p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 HOST    := "kachi@127.0.0.1"
 BASE    := "Arch-Linux-x86_64-cloudimg.qcow2"
+URL     := "https://fastly.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2"
 
 _default:
     @just --choose
@@ -40,8 +41,8 @@ ssh CMD='export TERM="xterm-256color"':
     @until ssh {{SSHOPTS}} -o ConnectTimeout=3 -o BatchMode=yes {{HOST}} true 2>/dev/null; do \
         echo "waiting for ssh..."; sleep 2; \
     done
-    @ssh {{SSHOPTS}} {{HOST}} 'mkdir -p ~/src && (mountpoint -q ~/src || sudo mount -t 9p -o trans=virtio,version=9p2000.L,msize=1048576 hostsrc ~/src)'
-    ssh -t {{SSHOPTS}} {{HOST}} "cd ~/src && {{CMD}} && bash -l"
+    # @ssh {{SSHOPTS}} {{HOST}} 'mkdir -p ~/src && (mountpoint -q ~/src || sudo mount -t 9p -o trans=virtio,version=9p2000.L,msize=1048576 hostsrc ~/src)'
+    ssh -t {{SSHOPTS}} {{HOST}} "{{CMD}} && bash -l"
 
 seed:
     xorriso -as genisoimage -output seed.iso -volid cidata -joliet -rock user-data meta-data
