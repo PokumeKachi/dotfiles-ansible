@@ -3,3 +3,4 @@
 *.pid
 *.iso
 bootstrap.sh
+localbootstrap.sh
