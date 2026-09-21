@@ -26,7 +26,7 @@ server-up: _image
         -drive file=seed.iso,media=cdrom \
         -netdev user,id=net0,hostfwd=tcp::2222-:22 \
         -device virtio-net-pci,netdev=net0 \
-        -fsdev local,id=fs0,path=src,security_model=none \
+        -fsdev local,id=fs0,path=../,security_model=none \
         -device virtio-9p-pci,fsdev=fs0,mount_tag=hostsrc
 
 server-down:
@@ -41,7 +41,7 @@ ssh CMD='export TERM="xterm-256color"':
     @until ssh {{SSHOPTS}} -o ConnectTimeout=3 -o BatchMode=yes {{HOST}} true 2>/dev/null; do \
         echo "waiting for ssh..."; sleep 2; \
     done
-    # @ssh {{SSHOPTS}} {{HOST}} 'mkdir -p ~/src && (mountpoint -q ~/src || sudo mount -t 9p -o trans=virtio,version=9p2000.L,msize=1048576 hostsrc ~/src)'
+    @ssh {{SSHOPTS}} {{HOST}} 'mkdir -p ~/src && (mountpoint -q ~/src || sudo mount -t 9p -o trans=virtio,version=9p2000.L,msize=1048576 hostsrc ~/src)'
     ssh -t {{SSHOPTS}} {{HOST}} "{{CMD}} && bash -l"
 
 seed:
