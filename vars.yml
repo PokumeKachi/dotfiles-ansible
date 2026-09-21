@@ -1,0 +1,26 @@
+packages:
+  - base-devel
+  - git
+  - direnv
+  - just
+  - stow
+
+aur:
+  - koreader
+  - wlogout
+
+repos:
+  stow:
+    repo: PokumeKachi/dotfiles-stow.git
+    dest: "{{ home }}/dotfiles/stow"
+  nix:
+    repo: PokumeKachi/dotfiles-nix.git
+    dest: "{{ home }}/dotfiles/nix"
+
+links:
+  config/nvim: .config/nvim
+  config/kitty: .config/kitty
+  home/dot-zshrc: .zshrc
+
+services_on: [NetworkManager]
+services_off: []

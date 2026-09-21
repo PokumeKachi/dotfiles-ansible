@@ -1,0 +1,47 @@
+SSHOPTS := "-p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+HOST    := "kachi@127.0.0.1"
+BASE    := "Arch-Linux-x86_64-cloudimg.qcow2"
+
+_default:
+    @just --choose
+
+_image:
+    @[ -f {{BASE}} ] || { \
+        echo "downloading {{BASE}}..."; \
+        curl -fL --progress-bar -o {{BASE}}.part {{URL}} && mv {{BASE}}.part {{BASE}}; \
+    }
+
+server-up: _image
+    @mkdir -p src
+    @if [ -f vm.pid ] && kill -0 "$(cat vm.pid)" 2>/dev/null; then \
+        echo "server already running"; exit 0; \
+    fi; \
+    rm -f test.qcow2 vm.pid vm.log; \
+    qemu-img create -q -f qcow2 -b {{BASE}} -F qcow2 test.qcow2 20G; \
+    qemu-system-x86_64 -enable-kvm -cpu host -m 4G -smp 4 \
+        -display none -monitor none -serial file:vm.log \
+        -daemonize -pidfile vm.pid \
+        -drive file=test.qcow2,format=qcow2 \
+        -drive file=seed.iso,media=cdrom \
+        -netdev user,id=net0,hostfwd=tcp::2222-:22 \
+        -device virtio-net-pci,netdev=net0 \
+        -fsdev local,id=fs0,path=src,security_model=none \
+        -device virtio-9p-pci,fsdev=fs0,mount_tag=hostsrc
+
+server-down:
+    @if [ -f vm.pid ]; then \
+        pid=$(cat vm.pid); \
+        kill "$pid" 2>/dev/null || true; \
+        while kill -0 "$pid" 2>/dev/null; do sleep 0.2; done; \
+        rm -f vm.pid; \
+    fi
+
+ssh CMD='export TERM="xterm-256color"':
+    @until ssh {{SSHOPTS}} -o ConnectTimeout=3 -o BatchMode=yes {{HOST}} true 2>/dev/null; do \
+        echo "waiting for ssh..."; sleep 2; \
+    done
+    @ssh {{SSHOPTS}} {{HOST}} 'mkdir -p ~/src && (mountpoint -q ~/src || sudo mount -t 9p -o trans=virtio,version=9p2000.L,msize=1048576 hostsrc ~/src)'
+    ssh -t {{SSHOPTS}} {{HOST}} "cd ~/src && {{CMD}} && bash -l"
+
+seed:
+    xorriso -as genisoimage -output seed.iso -volid cidata -joliet -rock user-data meta-data
